@@ -6,10 +6,10 @@ block_cipher = None
 
 a = Analysis(
     ['gui.py'],
-    pathex=['C:\\Users\\agruchacz\\bpe_IBK318_DoublePayments'],
+    pathex=['C:\\Users\\agruchacz\\Desktop\\pythonProject\\IBK777_PDF_MERGER'],
     binaries=[],
     datas=[],
-    hiddenimports=['win32timezone'],
+    hiddenimports=['comtypes'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -19,8 +19,7 @@ a = Analysis(
     cipher=block_cipher,
     noarchive=False)
 
-a.datas += [('auto.ico', 'C:\\Users\\agruchacz\\Desktop\\Create Exe\\getsitelogo.ico', 'Data')]
-
+a.datas += [('auto.ico', 'C:\\Users\\agruchacz\\Desktop\\Create Exe\\getsitelogo.ico', 'DATA')]
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
@@ -30,7 +29,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='Double Payments',
+    name='PDF Merger',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
