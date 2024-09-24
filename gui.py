@@ -1,223 +1,170 @@
+#!/usr/bin/python3
 """
-Paid items
-IBK:318+560
-Developed by: Adam Gruchacz, PAT
-Process Expert: Piotr Kolanowski
-11/10/2022
+IPE Reports Check
+IBK 337
+PAT: Adam Gruchacz & Michał Gurtowski
+# developed using as start point template of feedback_solution.py by Barron Stone
+# based on file from Python GUI Development with Tkinter on lynda.com
+SME: Augustyna Radomyska & Małgorzata Redzinska
+24/09/2024
+
 Module for GUI creation
 """
-from pathlib import Path
-from tkinter import Button, OptionMenu, StringVar, Tk, filedialog as fd, ttk
+from tkinter import *
+from tkinter import ttk, filedialog, messagebox, IntVar
 
-import main
+import config
+import invoice_reader
+import os
 
 
-class GUI:
-    """
-    class for GUI creation
-    """
-    CCC: str
-    AUTOMATION_TITLE: str = 'AX/PS Double Payments'
-    SELECT_FILE_STR: str = 'Select to be paid file'
-    EMPTY_PATH_COLOR: str = '#F0F0F0'
-    FILLED_PATH_COLOR: str = '#69BE28'
-    FOCUS_COLOR: str = '#D2785A'
-    RUN_BUTTON_COLOR: str = '#DBD99A'
+class IbkCombineInvoices:
 
-    # Automation geometry
-    MULTIPLIER: int = 20
-    X_1: int = MULTIPLIER
-    Y_1: int = MULTIPLIER
-    SEPARATOR_1: int = MULTIPLIER * 2
-    Y_2: int = SEPARATOR_1 + MULTIPLIER
-    Y_3: int = SEPARATOR_1 + MULTIPLIER * 3
-    SEPARATOR_2: int = SEPARATOR_1 + MULTIPLIER * 5
-    Y_4: int = SEPARATOR_1 + MULTIPLIER * 6
-    Y_5: int = SEPARATOR_1 + MULTIPLIER * 8
-    Y_6: int = SEPARATOR_1 + MULTIPLIER * 10
-    Y_7: int = SEPARATOR_1 + MULTIPLIER * 12
-    SHORT_WIDTH: int = int(0.6 * MULTIPLIER)
-    LONG_WIDTH: int = int(1.6 * MULTIPLIER)
-    LONG_HEIGHT: int = int(MULTIPLIER / 10)
-    SHORT_HEIGHT: int = int(MULTIPLIER / 20)
-    WINDOW_SIZE: str = f'{MULTIPLIER * 15}x{MULTIPLIER * 17}'
-    OPTION_MENU_WIDTH_2: int = int(MULTIPLIER * 1.0)
-    ERP: list[str] = ['Dynamics', 'PeopleSoft']
+    def __init__(self, master):
+        master.title(config.IBK_NUMBER + " " + config.IBK_TITLE + " - User Form")
+        master.resizable(False, False)
+        master.configure(background='#C0D4CB')
 
-    # OptionMenu initial values
-    ERP_SELECT: str = 'Select ERP system'
+        self.style = ttk.Style()
+        self.style.configure('TFrame', background='#C0D4CB')
+        self.style.configure('TButton', background='#538184')
+        self.style.configure('TLabel', background='#C0D4CB', font=('Arial', 8))
+        self.style.configure('Header.TLabel', font=('Arial', 12, 'bold'))
 
-    def __init__(self,
-                 master: Tk,
-                 init_path: Path = Path(),
-                 output_path: Path = Path(),
-                 final_path: Path = Path()) -> None:
+        self.frame_header = ttk.Frame(master)
+        self.frame_header.pack()
+        ttk.Label(self.frame_header, text=config.IBK_TITLE, style='Header.TLabel').grid(row=0, column=0, sticky="sw")
+        ttk.Label(self.frame_header, wraplength=300,
+                  text="developed by Process Automation Team").grid(row=1, column=0, sticky='sw')
+        self.frame_content = ttk.Frame(master)
+        self.frame_content.pack()
 
-        self.master = master
-        self.report_path = init_path
-        self.template_path = final_path
-        self.output_folder = output_path
-        self.filez = list()
-        master.title(GUI.AUTOMATION_TITLE)
+        # lambda -  it won't execute right away, instead waiting until the button is clicked.
+        ttk.Button(self.frame_content, text='Press to browse first invoice in pdf format)',
+                   command=lambda: self.get_first_pdf()).grid(row=0, column=0, padx=5, pady=5, sticky='sw')
+        ttk.Button(self.frame_content, text='Press to browse second invoice in pdf format',
+                   command=lambda: self.get_second_pdf()).grid(row=2, column=0, padx=5, pady=5, sticky='sw')
+        ttk.Button(self.frame_content, text='Press to browse folder in which output file will be saved',
+                   command=lambda: self.get_first_folder()).grid(row=4, column=0, padx=5, pady=5, sticky='sw')
+        ttk.Button(self.frame_content, text='Press to browse cbre logo',
+                   command=lambda: self.get_logo()).grid(row=6, column=0, padx=5, pady=5, sticky='sw')
+        '''ttk.Button(self.frame_content, text='TODO 2',
+                   command=lambda: self.get_embedding_macro_path()).grid(row=8, column=0, padx=5, pady=5, sticky='sw')
+        '''
+        ttk.Label(self.frame_content, text='Manual / invoices format expectations:', width=70,
+                  font=('Arial', 10)).grid(row=11, column=0, padx=5, sticky='sw')
+        ttk.Label(self.frame_content, text='1. Expected invoice format: YYYY-6digits-4digits', width=70,
+                  font=('Arial', 8)).grid(row=12, column=0, padx=5, sticky='sw')
+        ttk.Label(self.frame_content, text='2. Deal ID equals invoice without last 4 characters', width=70,
+                  font=('Arial', 8)).grid(row=13, column=0, padx=5, sticky='sw')
+        ttk.Label(self.frame_content, text='3. Reference information equals invoice number', width=70,
+                  font=('Arial', 8)).grid(row=14, column=0, padx=5, sticky='sw')
+        ttk.Label(self.frame_content, text='4. Producer includes small letters to be recognized correctly', width=70,
+                  font=('Arial', 8)).grid(row=15, column=0, padx=5, sticky='sw')
+        self.entry_first_pdf = ttk.Entry(self.frame_content, width=85, font=('Arial', 8))
+        self.entry_second_pdf = ttk.Entry(self.frame_content, width=85, font=('Arial', 8))
+        self.entry_first_folder = ttk.Entry(self.frame_content, width=85, font=('Arial', 8))
+        self.entry_logo = ttk.Entry(self.frame_content, width=85, font=('Arial', 8))
+        self.var1 = IntVar()
+        self.c1 = ttk.Checkbutton(self.frame_content, text='Revised', variable=self.var1, onvalue=1, offvalue=0)
+        self.entry_first_pdf.grid(row=1, column=0, padx=5)
+        self.entry_second_pdf.grid(row=3, column=0, padx=5)
+        self.entry_first_folder.grid(row=5, column=0, padx=5)
+        self.entry_logo.grid(row=7, column=0, padx=5)
+        self.c1.grid(row=9, column=0, padx=5, sticky='w')
 
-        self.rep_path_button: Button = Button(master,
-                                              text="Load 'Paid items' input file(s)",
-                                              command=self.select_report_path,
-                                              height=GUI.SHORT_HEIGHT,
-                                              width=GUI.LONG_WIDTH)
-        self.rep_path_button.place(x=GUI.X_1,
-                                   y=GUI.Y_1)
+        ttk.Button(self.frame_content, text='Launch',
+                   command=self.submit).grid(row=10, column=0, padx=5, pady=5, sticky='w')
+        ttk.Button(self.frame_content, text='Clear',
+                   command=self.clear).grid(row=10, column=0, padx=5, pady=5, sticky='e')
+        import sys
 
-        self.templ_path_button: Button = Button(master,
-                                                text="Load 'To pay' input file",
-                                                command=self.select_templ_path,
-                                                height=GUI.SHORT_HEIGHT,
-                                                width=GUI.LONG_WIDTH)
-        self.templ_path_button.place(x=GUI.X_1,
-                                     y=GUI.Y_2)
-        self.output_path_button: Button = Button(master,
-                                                 text="Load 'output' directory",
-                                                 command=self.select_output_directory,
-                                                 height=GUI.SHORT_HEIGHT,
-                                                 width=GUI.LONG_WIDTH)
-        self.output_path_button.place(x=GUI.X_1,
-                                      y=GUI.Y_3)
-        self.erp = StringVar(master)
-        self.erp.set(GUI.ERP_SELECT)
-        self.erp_option = OptionMenu(
-            master,
-            self.erp,
-            *GUI.ERP,
-            command=lambda _: self.change_option_states())
-        self.erp_option.config(width=GUI.LONG_WIDTH)
-        self.erp_option.pack()
-        self.erp_option.place(x=GUI.X_1,
-                              y=GUI.Y_4)
+        exe_path = sys.executable
+        folder_path = os.path.dirname(exe_path)
+        full_path = os.path.abspath(os.path.join(folder_path, "cbre_logo.jpg"))
+        self.entry_logo.insert(0, full_path)
 
-        self.run_automation_button: Button = Button(master,
-                                                    text="Run Automation",
-                                                    command=self.run,
-                                                    height=GUI.SHORT_HEIGHT,
-                                                    width=GUI.LONG_WIDTH,
-                                                    bg=GUI.RUN_BUTTON_COLOR)
-        self.run_automation_button.place(x=GUI.X_1,
-                                         y=GUI.Y_5)
-
-        self.separator_first = ttk.Separator(master,
-                                             orient='horizontal')
-        self.separator_first.place(x=0,
-                                   y=GUI.SEPARATOR_2,
-                                   relwidth=GUI.SHORT_HEIGHT)
-        self.label_text = StringVar()
-        '''self.label_text.set('Status: not running')
-        self.label = Label(master, textvariable=self.label_text)
-        self.label.place(x=17, y=GUI.Y_6)'''
-        self.clear_button: Button = Button(master,
-                                           text="Clear all selections",
-                                           command=self.clear_all,
-                                           height=GUI.SHORT_HEIGHT,
-                                           width=GUI.LONG_WIDTH)
-        self.clear_button.place(x=GUI.X_1,
-                                y=GUI.Y_7)
-        self.selected_erp = ""
-
-    def change_option_states(self) -> None:
+    def get_first_pdf(self) -> None:
         """
-        function gets selected erp value and change button color
-        :return:
+            function get full path of first pdf file
         """
-        self.selected_erp = self.erp.get()
-        if self.selected_erp != "":
-            self.erp_option.configure(bg=GUI.FILLED_PATH_COLOR)
+        file_path = filedialog.askopenfilename()
+        self.entry_first_pdf.delete(0, 'end')  # clear previous value
+        self.entry_first_pdf.insert(0, file_path)
+
+    def get_second_pdf(self) -> None:
+        """
+            function get full path of second pdf file
+        """
+        file_path = filedialog.askopenfilename()
+        self.entry_second_pdf.delete(0, 'end')  # clear previous value
+        self.entry_second_pdf.insert(0, file_path)
+
+    def get_first_folder(self) -> None:
+        """
+            function get full path folder
+        """
+        file_path = filedialog.askdirectory()
+        self.entry_first_folder.delete(0, 'end')  # clear previous value
+        self.entry_first_folder.insert(0, file_path)
+
+    def get_logo(self) -> None:
+        """
+            function get full path of logo file
+        """
+        file_path = filedialog.askopenfilename()
+        self.entry_logo.delete(0, 'end')  # clear previous value
+        self.entry_logo.insert(0, file_path)
+
+    '''
+    def get_embedding_macro_path(self) -> None:
+        """
+           TODO function get full path of xlsm file from user
+        """
+        file_path = filedialog.askopenfilename()
+        self.entry_macro_path.delete(0, 'end')  # clear previous value
+        self.entry_macro_path.insert(0, file_path)
+    '''
+    def submit(self) -> None:
+        """
+            function run main code passing values from GUI and show up final message
+        """
+        final_message = ""
+        if not self.entry_first_pdf.get().lower().endswith("pdf"):
+            messagebox.showerror("path error", "incorrect extension of first pdf file")
+        elif not self.entry_second_pdf.get().lower().endswith("pdf"):
+            messagebox.showerror("path error", "incorrect extension of second pdf file")
+        elif not self.entry_logo.get().lower().endswith("jpg"):
+            messagebox.showerror("path error", "incorrect extension of second logo file")
+        elif not os.path.isdir(self.entry_first_folder.get().lower()):
+            messagebox.showerror("path error", "expected directory location")
         else:
-            pass  # linia z else i pass nie jest potrzebna
-
-    def test(self) -> None:
-        """
-        function gets selected erp value and change button color
-        :return:
-        """
-        self.selected_erp = self.erp.get()
-        if self.selected_erp != "":
-            self.erp_option.configure(bg=GUI.FILLED_PATH_COLOR)
+            final_message = invoice_reader.create_pdf_file(self.entry_first_pdf.get(),
+                                                           self.entry_second_pdf.get(),
+                                                           self.entry_first_folder.get(),
+                                                           self.entry_logo.get(),
+                                                           self.var1.get())
+        if final_message == config.FINAL_MESSAGE or final_message == config.FINAL_MESSAGE_2_PAGES:
+            messagebox.showinfo("Final statement", final_message)
         else:
-            pass  # linia z else i pass nie jest potrzebna
+            messagebox.showerror("Error - not completed", final_message)
 
-    def clear_all(self) -> None:
+    def clear(self) -> None:
         """
-        function gets back the automation to initial state
-        :return: None
+            function clear all path selected in gui
         """
-        self.report_path = Path()
-        self.rep_path_button.configure(bg=GUI.EMPTY_PATH_COLOR)
-        self.template_path = Path()
-        self.templ_path_button.configure(bg=GUI.EMPTY_PATH_COLOR)
-        self.output_folder = Path()
-        self.output_path_button.configure(bg=GUI.EMPTY_PATH_COLOR)
-        self.erp.set(GUI.ERP_SELECT)
-        self.erp_option.configure(bg=GUI.EMPTY_PATH_COLOR)
-        self.run_automation_button['state'] = 'normal'
+        self.entry_first_pdf.delete(0, 'end')
+        self.entry_second_pdf.delete(0, 'end')
+        self.entry_first_folder.delete(0, 'end')
+        self.entry_logo.delete(0, 'end')
+        self.var1.set(0)
 
-    def select_report_path(self) -> Path:
-        """
-        function loads paid reports paths
-        :return: path to file
-        """
-        self.rep_path_button.configure(bg=GUI.EMPTY_PATH_COLOR)
-        self.filez = fd.askopenfilenames(parent=root, title='Choose a paid file(s)')
-        if len(self.filez) != 0:
-            self.rep_path_button.configure(bg=GUI.FILLED_PATH_COLOR)
-        else:
-            self.rep_path_button.configure(bg=GUI.EMPTY_PATH_COLOR)
-        return self.report_path
 
-    def select_templ_path(self) -> Path:
-        """
-        function loads TobePaid path
-        :return: path to file
-        """
-        self.templ_path_button.configure(bg=GUI.EMPTY_PATH_COLOR)
-        self.template_path = Path(fd.askopenfilename(
-            title=GUI.SELECT_FILE_STR))
-        if self.template_path != Path():
-            self.templ_path_button.configure(bg=GUI.FILLED_PATH_COLOR)
-        else:
-            self.templ_path_button.configure(bg=GUI.EMPTY_PATH_COLOR)
-        return self.template_path
-
-    def select_output_directory(self) -> Path:
-        """
-        function loads directory of folder where output file will saved
-        :return: path to file
-        """
-        self.output_path_button.configure(bg=GUI.EMPTY_PATH_COLOR)
-        self.output_folder = fd.askdirectory(parent=root, title='Choose a folder')
-        '''self.filez = fd.askdirectory(parent=root, title='Choose a file')'''
-        '''if self.report_path != Path():'''
-        if len(self.output_folder) != 0:
-            self.output_path_button.configure(bg=GUI.FILLED_PATH_COLOR)
-        else:
-            self.output_path_button.configure(bg=GUI.EMPTY_PATH_COLOR)
-        return self.report_path
-
-    def run(self) -> None:
-        """
-        function runs the automation
-        :return: None
-        """
-
-        '''self.run_automation_button.configure(bg=GUI.FILLED_PATH_COLOR)'''
-        self.run_automation_button['state'] = 'disabled'
-        try:
-            main.mainprocess(str(self.template_path), self.filez, str(self.output_folder), self.selected_erp)
-        except Exception:
-            pass
-        exit()
+def main() -> None:
+    root = Tk()
+    IbkCombineInvoices(root)
+    root.mainloop()
 
 
 if __name__ == "__main__":
-    root = Tk()
-    my_gui = GUI(root)
-    root.geometry(my_gui.WINDOW_SIZE)
-    root.attributes('-topmost', True)
-    root.mainloop()
+    main()
