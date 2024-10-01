@@ -27,8 +27,6 @@ def get_invoice_number(lst: list) -> str:
      :return: str
     """
 
-    invoice_number = "invoice not recognized"
-
     for element in lst:
 
         pattern = config.INVOICE_PATTERN  # r'(?<=INVOICE : )[\d-]+'
@@ -36,6 +34,8 @@ def get_invoice_number(lst: list) -> str:
         if match:
             invoice_number = match.group()
             return invoice_number
+        else:
+            return "invoice not recognized"
 
 
 def get_producer_name(lst: list) -> str:

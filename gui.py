@@ -6,7 +6,7 @@ PAT: Adam Gruchacz & Michał Gurtowski
 # developed using as start point template of feedback_solution.py by Barron Stone
 # based on file from Python GUI Development with Tkinter on lynda.com
 SME: Augustyna Radomyska & Małgorzata Redzinska
-24/09/2024
+01/Oct/2024
 
 Module for GUI creation
 """

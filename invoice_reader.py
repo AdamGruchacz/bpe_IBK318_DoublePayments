@@ -38,13 +38,13 @@ class Invoice:
                                  self.comments_summary, self.remittance]
 
 
-def print_history_and_get_values(original_section: list, dicthistory: dict, section: dict,
-                                 output_canvas:  canvas.Canvas, start_y: float = 0) -> list:
+def print_history_and_get_values(dicthistory: dict, section: dict, output_canvas:  canvas.Canvas,
+                                 page_height: float, start_y: float = 0) -> list:
     """
         function print section to canvas without text adjustment
-        :param original_section: list including rows of section
         :param dicthistory: dictionary including aggregated details rom both deal history sections
         :param section: dictionary including rows of section
+        :param page_height: self-explanatory
         :param output_canvas: self-explanatory
         :param start_y: start position
         :return: list (float, float, float)
@@ -58,54 +58,47 @@ def print_history_and_get_values(original_section: list, dicthistory: dict, sect
 
     page_top_bottom_margin = 66
     gap_between_paragraphs = 15
-    section_start_y = original_section[0].y - gap_between_paragraphs
-    '''start_y = start_y + gap_between_paragraphs'''
-    '''phrase_after = ""
-    final_y = 0'''
 
-    section_offset = 0
-    '''if start_y != 0:
-        section_offset = section_start_y - start_y + gap_between_paragraphs'''
+    needed_height = (((start_y - page_height) * - 1) +
+                     page_top_bottom_margin + gap_between_paragraphs + 12 * (2 + len(dicthistory)))
 
-    if original_section[-1].y - section_offset < page_top_bottom_margin:
+    if page_height < needed_height:
         output_canvas.showPage()
-        '''start_y = Invoice.page_height - page_top_bottom_margin'''
-    '''    section_offset = section_start_y - start_y + gap_between_paragraphs
+        section_start_y = page_height - page_top_bottom_margin
     else:
-        section_offset = section_offset + gap_between_paragraphs - 100'''
+        section_start_y = start_y - gap_between_paragraphs
 
     # print headers
     x_first_column = 41.4
     x_second_column = 171.9
     x_third_column = 279.9
     x_fourth_column = 505.51
-    '''x_fourth_column_data = 548.10'''
     output_canvas.setFont("Times-Bold", 10.53)
-    output_canvas.drawString(x_first_column, section_start_y-30 - 75, "DEAL PAYMENT HISTORY")
+    output_canvas.drawString(x_first_column, section_start_y, "DEAL PAYMENT HISTORY")
     output_canvas.setFillColor(colors.yellowgreen)
-    output_canvas.rect(x_first_column, section_start_y - 30 - 11.50 - 75 - 3, config.RECTANGLE_WIDTH, 12, fill=1,
+    output_canvas.rect(x_first_column, section_start_y - 14.5, config.RECTANGLE_WIDTH, 12, fill=1,
                        stroke=0)
+    section_start_y = section_start_y - 11.50
     output_canvas.setFillColorRGB(0, 0, 0)  # back to black
-    output_canvas.drawString(x_first_column, section_start_y - 30 - 11.50 - 75, "Payment Received Date")
-    output_canvas.drawString(x_second_column, section_start_y - 30 - 11.50 - 75, "Check #")
-    output_canvas.drawString(x_third_column, section_start_y - 30 - 11.50 - 75, "Invoice # Applied")
-    output_canvas.drawString(x_fourth_column, section_start_y - 30 - 11.50 - 75, "Payment Received")
+    output_canvas.drawString(x_first_column, section_start_y, "Payment Received Date")
+    output_canvas.drawString(x_second_column, section_start_y, "Check #")
+    output_canvas.drawString(x_third_column, section_start_y, "Invoice # Applied")
+    output_canvas.drawString(x_fourth_column, section_start_y, "Payment Received")
     output_canvas.setFont("Times-Roman", 9.05)
     for key, value in dicthistory.items():
         section_start_y = section_start_y - 11.5
-        output_canvas.drawString(x_first_column, section_start_y - 30 - 11.50 - 75, value[0])
-        output_canvas.drawString(x_second_column, section_start_y - 30 - 11.50 - 75, value[1])
-        output_canvas.drawString(x_third_column, section_start_y - 30 - 11.50 - 75, value[2])
+        output_canvas.drawString(x_first_column, section_start_y, value[0])
+        output_canvas.drawString(x_second_column, section_start_y, value[1])
+        output_canvas.drawString(x_third_column, section_start_y, value[2])
         formatted_amount = utils.get_final_total(value[3], 0, False)
         output_canvas.drawString(config.SUMMARY_X_POSITION_INVOICE_DETAIL - output_canvas.stringWidth(formatted_amount),
-                                 section_start_y - 30 - 11.50 - 75, formatted_amount)
+                                 section_start_y, formatted_amount)
     section_start_y = section_start_y - 11.5
     output_canvas.setFont("Times-Bold", 9.38)
-    output_canvas.drawString(364.62, section_start_y - 30 - 11.50 - 75, "Total Payment Received To Date:")
+    output_canvas.drawString(364.62, section_start_y, "Total Payment Received To Date:")
     formatted_amount = utils.get_final_total(total_amount, 0, False)
     output_canvas.drawString(config.SUMMARY_X_POSITION_INVOICE_DETAIL - output_canvas.stringWidth(formatted_amount),
-                             section_start_y - 30 - 11.50 - 75, formatted_amount)
-    section_start_y = section_start_y - gap_between_paragraphs - 170
+                             section_start_y, formatted_amount)
     return section_start_y, total_amount, total_amount
 
 
@@ -227,10 +220,10 @@ def section_invoice(inv_lines: list, page_order: int = 1) -> Invoice:
     return sectioned_inv
 
 
-def print_section_and_adjust_comment_section(section: list, total_amount_due_this_invoice: str, total_commission: str,
-                                             remaining_balance_due: str, total_payment_received: str,
-                                             output_canvas: canvas.Canvas,
-                                             start_y: float = 0) -> float:
+def print_and_adjust_comment_section(section: list, total_amount_due_this_invoice: str, total_commission: str,
+                                     remaining_balance_due: str, total_payment_received: str,
+                                     output_canvas: canvas.Canvas, page_height: float,
+                                     start_y: float = 0) -> float:
     """
         function print section to canvas without text adjustment
         :param section: list including rows of section
@@ -239,6 +232,7 @@ def print_section_and_adjust_comment_section(section: list, total_amount_due_thi
         :param remaining_balance_due: presented as string
         :param total_payment_received: presented as string
         :param output_canvas: self-explanatory
+        :param page_height : self-explanatory
         :param start_y: start position
         :return: float
    """
@@ -247,18 +241,18 @@ def print_section_and_adjust_comment_section(section: list, total_amount_due_thi
 
     page_top_bottom_margin = 66
     gap_between_paragraphs = 30
-    section_start_y = start_y  # section[0].y
 
     final_y = 0
 
-    section_offset = 0
-    if start_y != 0:
-        section_offset = section_start_y - gap_between_paragraphs
+    needed_height = (((start_y - page_height) * - 1) +
+                     page_top_bottom_margin + gap_between_paragraphs + int(section[0].y) - int(section[-1].y))
 
-    if section[-1].y - section_offset < page_top_bottom_margin:
+    if page_height < needed_height:
         output_canvas.showPage()
-        start_y = Invoice.page_height - page_top_bottom_margin
-        section_offset = section_start_y - start_y + gap_between_paragraphs
+    else:
+        start_y = page_top_bottom_margin
+
+    start_y = start_y - gap_between_paragraphs
 
     update_less_total_paid_to_date = False
     update_total_amount_due_this_invoice = False
@@ -266,54 +260,61 @@ def print_section_and_adjust_comment_section(section: list, total_amount_due_thi
     update_less_cooperating_broker_paid_by_client = False
     update_commission = False
     update_remaining_balance_due = False
+    section_offset = 0
     for line in section:
         output_canvas.setFont(line.font_name, line.font_size)
+        line.get_text()
+        if section_offset == 0:
+            section_offset = start_y - line.y + int(section[0].y)
+        else:
+            section_offset = section_offset + line.y - y_previous_line
         if update_less_total_paid_to_date:
             output_canvas.drawString(config.SUMMARY_X_POSITION - output_canvas.stringWidth(total_payment_received),
-                                     line.y - section_offset, total_payment_received)
+                                     section_offset, total_payment_received)
             update_less_total_paid_to_date = False
         elif update_remaining_balance_due:
             output_canvas.drawString(config.SUMMARY_X_POSITION - output_canvas.stringWidth(remaining_balance_due),
-                                     line.y - section_offset, remaining_balance_due)
+                                     section_offset, remaining_balance_due)
             update_remaining_balance_due = False
         elif update_commission:
             output_canvas.drawString(config.SUMMARY_X_POSITION - output_canvas.stringWidth(total_commission),
-                                     line.y - section_offset, total_commission)
+                                     section_offset, total_commission)
             update_commission = False
         elif update_total_amount_due_this_invoice:
             output_canvas.drawString(config.SUMMARY_X_POSITION -
                                      output_canvas.stringWidth(total_amount_due_this_invoice),
-                                     line.y - section_offset, total_amount_due_this_invoice)
+                                     section_offset, total_amount_due_this_invoice)
             update_total_amount_due_this_invoice = False
         elif update_plus_reimbursable_expense:
-            output_canvas.drawString(config.SUMMARY_X_POSITION - output_canvas.stringWidth("$0.00"), line.y -
+            output_canvas.drawString(config.SUMMARY_X_POSITION - output_canvas.stringWidth("$0.00"),
                                      section_offset, "$0.00")  # constant amount
             update_plus_reimbursable_expense = False
         elif update_less_cooperating_broker_paid_by_client:
-            output_canvas.drawString(config.SUMMARY_X_POSITION - output_canvas.stringWidth("-$0.00"), line.y -
+            output_canvas.drawString(config.SUMMARY_X_POSITION - output_canvas.stringWidth("-$0.00"),
                                      section_offset, "-$0.00")  # constant amount
             update_less_cooperating_broker_paid_by_client = False
         elif "Remaining Balance Due".upper() in str(line.get_text()).upper():
-            output_canvas.drawString(line.x, line.y - section_offset, line.get_text())
+            output_canvas.drawString(line.x, section_offset, line.get_text())
             update_remaining_balance_due = True
         elif "Transaction Commission".upper() in str(line.get_text()).upper():
-            output_canvas.drawString(line.x, line.y - section_offset, line.get_text())
+            output_canvas.drawString(line.x, section_offset, line.get_text())
             update_commission = True
         elif "Less: Total Paid To Date".upper() in str(line.get_text()).upper():
-            output_canvas.drawString(line.x, line.y - section_offset, line.get_text())
+            output_canvas.drawString(line.x, section_offset, line.get_text())
             update_less_total_paid_to_date = True
         elif "Total amount Due this Invoice".upper() in str(line.get_text()).upper():
-            output_canvas.drawString(line.x, line.y - section_offset, line.get_text())
+            output_canvas.drawString(line.x, section_offset, line.get_text())
             update_total_amount_due_this_invoice = True
         elif "Plus: Reimbursable Expense".upper() in str(line.get_text()).upper():
-            output_canvas.drawString(line.x, line.y - section_offset, line.get_text())
+            output_canvas.drawString(line.x, section_offset, line.get_text())
             update_plus_reimbursable_expense = True
         elif "Cooperating  Broker paid by Client".upper() in str(line.get_text()).upper():
-            output_canvas.drawString(line.x, line.y - section_offset, line.get_text())
+            output_canvas.drawString(line.x, section_offset, line.get_text())
             update_less_cooperating_broker_paid_by_client = True
         else:
-            output_canvas.drawString(line.x, line.y - section_offset, line.get_text())
-        final_y = line.y - section_offset
+            output_canvas.drawString(line.x, section_offset, line.get_text())
+        y_previous_line = line.y
+        final_y = section_offset
     return final_y
 
 
@@ -422,9 +423,9 @@ def print_history_and_get_value(dicthistory: dict, section: list, output_canvas:
     return final_y, total_amount, invoices_amount
 
 
-def print_section_with_adjustments(section: list, output_canvas: canvas.Canvas, invoice_name: str,
-                                   original_producer: str, new_producer: str, revision: int,
-                                   start_y: float = 0) -> float:
+def print_header_section_with_adjustments(section: list, output_canvas: canvas.Canvas, invoice_name: str,
+                                          original_producer: str, new_producer: str, revision: int,
+                                          start_y: float = 0) -> float:
     """
         function print section to canvas with adjustment where needed
         :param section: list including rows of section
@@ -491,9 +492,9 @@ def print_section_with_adjustments(section: list, output_canvas: canvas.Canvas, 
     return final_y
 
 
-def print_section_with_update_and_get_total_commission(section: list, output_canvas: canvas.Canvas,
-                                                       text_to_be_added: str, expected_phrase: str,
-                                                       start_y: float = 0) -> list:
+def print_cc_section_and_get_total_commission(section: list, output_canvas: canvas.Canvas,
+                                              text_to_be_added: str, expected_phrase: str,
+                                              start_y: float = 0) -> list:
     """
         function print section to canvas with adjustment for reference information
         :param section: list including rows of section
@@ -622,10 +623,10 @@ def preparing_one_cc_section_and_get_total_commission(section: list, output_canv
     return final_y, float(total_commission.replace("$", "").replace(",", "")), total_commission
 
 
-def print_section_with_update_and_get_total_invoice_due(section: list, output_canvas: canvas.Canvas,
-                                                        text_to_be_added: str, expected_phrase: str,
-                                                        start_y: float, first: bool,
-                                                        first_total_invoice_due_amount: float = 0) -> list:
+def print_inv_detail_section_and_get_total_invoice_due(section: list, output_canvas: canvas.Canvas,
+                                                       text_to_be_added: str, expected_phrase: str,
+                                                       start_y: float, first: bool,
+                                                       first_total_invoice_due_amount: float = 0) -> list:
     """
         function print section to canvas with adjustment for reference information
         :param section: list including rows of section
@@ -703,7 +704,6 @@ def print_section_with_update_and_get_total_invoice_due(section: list, output_ca
             start_printing = True
 
         final_y = line.y - section_offset
-
     return final_y, float(total_invoice_due_amount.replace("$", "").replace(",", ""))
 
 
@@ -730,9 +730,9 @@ def get_requested_value_from_list(section: list, expected_phrase: str, number_of
     return str(number_of_items_after)  # of not recognized treat as another values fount
 
 
-def print_section_with_update(section: list, output_canvas: canvas.Canvas,
-                              text_to_be_added: str, expected_phrase: str,
-                              start_y: float = 0, y_type="y") -> float:
+def print_remittance_section(section: list, output_canvas: canvas.Canvas,
+                             text_to_be_added: str, expected_phrase: str,
+                             start_y: float = 0, y_type="y") -> float:
     """
         function print section to canvas with adjustment for reference information
         :param section: list including rows of section
@@ -831,8 +831,8 @@ def create_pdf_file(inv1: str, inv2: str, output_folder: str, logo_path: str, re
     due_date2 = get_requested_value_from_list(invoice2_sectioned.inv_detail, "Amount Due", 1)
     description1 = get_requested_value_from_list(invoice1_sectioned.inv_detail, "Amount Due", 2)
     description2 = get_requested_value_from_list(invoice2_sectioned.inv_detail, "Amount Due", 2)
-    print_section_with_adjustments(invoice1_sectioned.header, c, final_invoice_name, first_producer_name,
-                                   producer_name, revision)
+    print_header_section_with_adjustments(invoice1_sectioned.header, c, final_invoice_name, first_producer_name,
+                                          producer_name, revision)
     if total_consideration1 == total_consideration2 and due_date1 == due_date2 and description1 == description2:
         returned_list = preparing_one_cc_section_and_get_total_commission(invoice1_sectioned.cc_calc, c,
                                                                           first_invoice_name[:+config.DEAL_ID_LENGTH],
@@ -840,59 +840,48 @@ def create_pdf_file(inv1: str, inv2: str, output_folder: str, logo_path: str, re
         total_commission_float = returned_list[1]
         total_commission = returned_list[2]
     else:
-        returned_list = print_section_with_update_and_get_total_commission(invoice1_sectioned.cc_calc, c,
-                                                                           first_invoice_name[:+config.DEAL_ID_LENGTH],
-                                                                           config.CONSIDERATION_COMMISSION)
+        returned_list = print_cc_section_and_get_total_commission(invoice1_sectioned.cc_calc, c,
+                                                                  first_invoice_name[:+config.DEAL_ID_LENGTH],
+                                                                  config.CONSIDERATION_COMMISSION)
         total_commission = returned_list[1]
         total_commission_float = total_commission
-        returned_list = print_section_with_update_and_get_total_commission(invoice2_sectioned.cc_calc, c,
-                                                                           second_invoice_name[:+config.DEAL_ID_LENGTH],
-                                                                           config.CONSIDERATION_COMMISSION,
-                                                                           returned_list[0])
+        returned_list = print_cc_section_and_get_total_commission(invoice2_sectioned.cc_calc, c,
+                                                                  second_invoice_name[:+config.DEAL_ID_LENGTH],
+                                                                  config.CONSIDERATION_COMMISSION,
+                                                                  returned_list[0])
         total_commission_float = total_commission_float + returned_list[1]
         total_commission = utils.get_final_total(total_commission, returned_list[1], False)
 
-    returned_list = print_section_with_update_and_get_total_invoice_due(invoice1_sectioned.inv_detail, c,
-                                                                        first_invoice_name[:+config.DEAL_ID_LENGTH] +
-                                                                        " & "
-                                                                        + second_invoice_name[:+config.DEAL_ID_LENGTH],
-                                                                        config.INVOICE_DETAIL, returned_list[0], True)
+    returned_list = print_inv_detail_section_and_get_total_invoice_due(invoice1_sectioned.inv_detail, c,
+                                                                       first_invoice_name[:+config.DEAL_ID_LENGTH] +
+                                                                       " & "
+                                                                       + second_invoice_name[:+config.DEAL_ID_LENGTH],
+                                                                       config.INVOICE_DETAIL, returned_list[0], True)
     total_invoice_due = returned_list[1]
-    returned_list = print_section_with_update_and_get_total_invoice_due(invoice2_sectioned.inv_detail, c,
-                                                                        second_invoice_name[:+config.DEAL_ID_LENGTH],
-                                                                        config.INVOICE_DETAIL, returned_list[0], False,
-                                                                        total_invoice_due)
+    returned_list = print_inv_detail_section_and_get_total_invoice_due(invoice2_sectioned.inv_detail, c,
+                                                                       second_invoice_name[:+config.DEAL_ID_LENGTH],
+                                                                       config.INVOICE_DETAIL, returned_list[0], False,
+                                                                       total_invoice_due)
     total_invoice_due = total_invoice_due + returned_list[1]
-    '''returned_list = print_history_and_get_value(dicthistory, invoice1_sectioned.deal_pmt_history, c, 
-                                                first_invoice_name,
-                                                second_invoice_name, True, returned_list[0])'''
-    returned_list = print_history_and_get_values(invoice1_sectioned.deal_pmt_history, dicthistory, dict_check_date,
-                                                 c, returned_list[0])
+    returned_list = print_history_and_get_values(dicthistory, dict_check_date, c, page_height, returned_list[0])
 
     total_payment_received = returned_list[1]
     amount_already_paid = returned_list[2]
     total_payment_received_float = total_payment_received
     y = returned_list[0]
-    '''returned_list = print_history_and_get_value(dicthistory, invoice2_sectioned.deal_pmt_history, c,
-                                            first_invoice_name,
-                                                second_invoice_name, False, returned_list[0])'''
-    '''total_payment_received_float = total_payment_received_float + returned_list[1]
-
-    y = returned_list[0]
-    amount_already_paid = -1 * (amount_already_paid + returned_list[2])'''
 
     total_invoice_due = utils.get_final_total(total_invoice_due, -1 * amount_already_paid, False)
     remaining_balance_due = utils.get_final_total(total_commission_float, -1 * total_payment_received_float, False)
     total_payment_received = utils.get_final_total(total_payment_received_float, 0, True)
 
-    y = print_section_and_adjust_comment_section(invoice1_sectioned.comments_summary, total_invoice_due,
-                                                 total_commission, remaining_balance_due, total_payment_received, c, y)
+    y = print_and_adjust_comment_section(invoice1_sectioned.comments_summary, total_invoice_due, total_commission,
+                                         remaining_balance_due, total_payment_received, c, page_height, y)
     if len(invoice2_sectioned.remittance) > 0:
-        print_section_with_update(invoice2_sectioned.remittance, c, final_invoice_name,
-                                  config.REFERENCE_INFORMATION,  y)
+        print_remittance_section(invoice2_sectioned.remittance, c, final_invoice_name,
+                                 config.REFERENCE_INFORMATION, y)
     else:
-        print_section_with_update(invoice2_sectioned_page2.remittance, c, final_invoice_name,
-                                  config.REFERENCE_INFORMATION, y)
+        print_remittance_section(invoice2_sectioned_page2.remittance, c, final_invoice_name,
+                                 config.REFERENCE_INFORMATION, y)
 
     c.save()
     utils.add_number_of_pages(canvas_name, output_folder, output_filename)
